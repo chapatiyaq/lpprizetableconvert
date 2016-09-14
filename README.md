@@ -7,8 +7,8 @@ The conversion rates are stored in JSON files located in the 'json' folder.
 Most conversion stop at the end of 2014, because after that the new prize pool templates were used.
 
 ## To add a currency
-*Create a 'xxxtousd.json' file and fill it like the other JSON files.
-*In 'getRate.php', add a line `case 'xxxtousd':`
+* Create a 'xxxtousd.json' file and fill it like the other JSON files.
+* In 'getRate.php', add a line `case 'xxxtousd':`
 With 'xxx' the abbreviation of the currency in lowercase
 
 ## Getting rates from xe.com
