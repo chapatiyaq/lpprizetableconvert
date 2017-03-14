@@ -313,6 +313,19 @@ var tableOffset = parseInt(options.tableOffset),
 			player1Column = lastPrizeColumn + 2;
 			player2Column = lastPrizeColumn + 3;
 		}
+		if (!currency2 && $tables[0].find('tr:first').find('th, td').eq(lastPrizeColumn + 2).text().trim() == 'Seed') {
+			currency2 = 'seed';
+			prizeColumn2 = lastPrizeColumn + 2;
+			if (type == 'individual' || type == 'singles') {
+				playerColumn++;
+				teamColumn++;
+			} else if (type == 'team') {
+				teamColumn++;
+			} else if (type == 'doubles') {
+				player1Column++;
+				player2Column++;
+			}
+		}
 	} else {
 		if (type == 'individual' || type == 'singles') {
 			playerColumn = lastPrizeColumn + 1;
