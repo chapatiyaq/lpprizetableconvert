@@ -29,9 +29,9 @@ var tableOffset = parseInt(options.tableOffset),
 		return months[this.getMonth()] + ' ' + this.getDate() + ', ' + this.getFullYear();
 	};
 	Date.prototype.toISODateOnly = function() {
-		return this.getFullYear()
-			+ '-' + (this.getMonth() < 9 ? 0 : "") + (this.getMonth() + 1)
-			+ '-' + (this.getDate() < 10 ? 0 : "") + this.getDate();
+		return this.getFullYear() +
+			'-' + (this.getMonth() < 9 ? 0 : "") + (this.getMonth() + 1) +
+			'-' + (this.getDate() < 10 ? 0 : "") + this.getDate();
 	};
 
 	function playerWikitext(game, i, player) {
@@ -71,7 +71,9 @@ var tableOffset = parseInt(options.tableOffset),
 	}
 
 	function parsePlayer(input, global) {
-		var $playerCell = input.$this.find('td').eq(input.playerColumn - (input.rowspanOffsetEnable ? input.rowspanOffset : 0));
+		var playerColumn = input.playerColumn -
+			(input.rowspanOffsetEnable ? input.rowspanOffset : 0);
+		var $playerCell = input.$this.find('td').eq(playerColumn);
 		var player = {flag: '', race: '', heads: [], name: ''};
 		var headsCount = 0;
 		$playerCell.find('img').each(function() {
@@ -99,8 +101,9 @@ var tableOffset = parseInt(options.tableOffset),
 		return player;
 	}
 
-	function templateTitle(element, game, type) {
-		var title = 'Prize pool ' + element;
+	function templateTitle(element, game, type, special) {
+		var title = ((special == 'challenger' || special == 'codea') && element == 'slot' ? 'Challenger' : 'Prize pool');
+		title += ' ' + element;
 		if (type == 'team') {
 			if (game == 'starcraft' || game == 'starcraft2' || game == 'hearthstone' || game == 'smash') {
 				title += ' team';
@@ -147,14 +150,17 @@ var tableOffset = parseInt(options.tableOffset),
 		return 0;
 	}
 
-	var placeColumn  = 0,
-		prizeColumn1 = 1,
-		prizeColumn2,
-		prizeColumn3,
-		pointsColumn,
-		playerColumn,
-		teamColumn,
-		player1Column, player2Column,
+	var columns = {
+			place: 0,
+			prize1: 1,
+			prize2: null,
+			prize3: null,
+			points: null,
+			player: null,
+			team: null,
+			player1: null,
+			player2: null
+		},
 		currency1, currency1match,
 		currency2, currency2match,
 		currency3, currency3match,
@@ -189,7 +195,7 @@ var tableOffset = parseInt(options.tableOffset),
 	}
 	console.log($tables);
 
-	currency1match = $tables[0].find('tr:first').find('th, td').eq(prizeColumn1).text().match(/(^|[^A-Z])([A-Z\$]{3}|AU|Percent)(?![A-Z])/);
+	currency1match = $tables[0].find('tr:first').find('th, td').eq(columns.prize1).text().match(/(^|[^A-Z])([A-Z\$]{3}|AU|Percent)(?![A-Z])/);
 	if (currency1match !== null) {
 		if (currency1match[2] !== 'WCS' && currency1match[2] !== 'OSC') {
 			if (currency1match[2] == 'AU') {
@@ -203,19 +209,19 @@ var tableOffset = parseInt(options.tableOffset),
 			}
 		}
 	} else {
-		if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1).text().match(/[0-9]/) !== null) {
-			currency1match = $tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1).text().match(/(^|[^A-Z])([A-Z\$]{3})(?![A-Z])/);
+		if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1).text().match(/[0-9]/) !== null) {
+			currency1match = $tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1).text().match(/(^|[^A-Z])([A-Z\$]{3})(?![A-Z])/);
 			if (currency1match !== null	&& $.inArray(currency1match[2], playersWithCaps) === -1) {
 				currency1 = currency1match[2].replace('$','D');
-			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1).text().indexOf('€') !== -1) {
+			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1).text().indexOf('€') !== -1) {
 				currency1 = 'EUR';
-			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1).text().indexOf('£') !== -1) {
+			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1).text().indexOf('£') !== -1) {
 				currency1 = 'GBP';
-			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1).text().indexOf('₩') !== -1) {
+			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1).text().indexOf('₩') !== -1) {
 				currency1 = 'KRW';
-			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1).text().indexOf('AU$') !== -1) {
+			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1).text().indexOf('AU$') !== -1) {
 				currency1 = 'AUD';
-			} else if (esrever.reverse($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1).text()).match(/\$(?!UA)/) !== null) {
+			} else if (esrever.reverse($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1).text()).match(/\$(?!UA)/) !== null) {
 				currency1 = 'USD';
 			}
 		}
@@ -224,129 +230,129 @@ var tableOffset = parseInt(options.tableOffset),
 			currency1 = defaultCurrency;
 		}
 	}
-	currency2match = $tables[0].find('tr:first').find('th, td').eq(prizeColumn1 + 1).text().match(/(^|[^A-Z])([A-Z\$]{3}|Percent)(?![A-Z])/);
+	currency2match = $tables[0].find('tr:first').find('th, td').eq(columns.prize1 + 1).text().match(/(^|[^A-Z])([A-Z\$]{3}|Percent|Seed)(?![A-Z])/);
 	if (currency2match !== null) {
 		if (currency2match[2] !== 'WCS' && currency2match[2] !== 'OSC') {
-			prizeColumn2 = prizeColumn1 + 1;
+			columns.prize2 = columns.prize1 + 1;
 			if (currency2match[2] == 'Percent') {
 				currency2 = 'pcnt';
+			} if (currency2match[2] == 'Seed') {
+				if (special == 'seedaslocalcurrency')
+					currency2 = 'seed';
 			} else {
 				currency2 = currency2match[2].replace('$','D');
 			}
 		}
 	} else {
-		if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1 + 1).text().match(/[0-9]/) !== null) {
-			currency2match = $tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1 + 1).text().match(/(^|[^A-Z])([A-Z\$]{3})(?![A-Z])/);
+		if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1 + 1).text().match(/[0-9]/) !== null) {
+			currency2match = $tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1 + 1).text().match(/(^|[^A-Z])([A-Z\$]{3})(?![A-Z])/);
 			if (currency2match !== null	&& $.inArray(currency2match[2], playersWithCaps) === -1) {
 				currency2 = currency2match[2].replace('$','D');
-			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1 + 1).text().indexOf('€') !== -1) {
+			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1 + 1).text().indexOf('€') !== -1) {
 				currency2 = 'EUR';
-			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1 + 1).text().indexOf('£') !== -1) {
+			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1 + 1).text().indexOf('£') !== -1) {
 				currency2 = 'GBP';
-			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1 + 1).text().indexOf('₩') !== -1) {
+			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1 + 1).text().indexOf('₩') !== -1) {
 				currency2 = 'KRW';
-			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1 + 1).text().indexOf('AU$') !== -1) {
+			} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1 + 1).text().indexOf('AU$') !== -1) {
 				currency2 = 'AUD';
-			} else if (esrever.reverse($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn1 + 1).text()).match(/\$(?!UA)/) !== null) {
+			} else if (esrever.reverse($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize1 + 1).text()).match(/\$(?!UA)/) !== null) {
 				currency2 = 'USD';
 			}
 		}
 	}
 	if (currency2) {
-		prizeColumn2 = prizeColumn1 + 1;
+		columns.prize2 = columns.prize1 + 1;
 
-		currency3match = $tables[0].find('tr:first').find('th, td').eq(prizeColumn2 + 1).text().match(/(^|[^A-Z])([A-Z\$]{3})(?![A-Z])/);
+		currency3match = $tables[0].find('tr:first').find('th, td').eq(columns.prize2 + 1).text().match(/(^|[^A-Z])([A-Z\$]{3})(?![A-Z])/);
 		if (currency3match !== null) {
 			if (currency3match[2] !== 'WCS' && currency3match[2] !== 'OSC') {
-				prizeColumn3 = prizeColumn2 + 1;
+				columns.prize3 = columns.prize2 + 1;
 				currency3 = currency3match[2].replace('$','D');
 			}
 		} else {
-			if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn2 + 1).text().match(/[0-9]/) !== null) {
-				currency3match = $tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn2 + 1).text().match(/(^|[^A-Z])([A-Z\$]{3})(?![A-Z])/);
+			if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize2 + 1).text().match(/[0-9]/) !== null) {
+				currency3match = $tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize2 + 1).text().match(/(^|[^A-Z])([A-Z\$]{3})(?![A-Z])/);
 				if (currency3match !== null && $.inArray(currency3match[2], playersWithCaps) === -1) {
 					currency3 = currency3match[2].replace('$','D');
-				} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn2 + 1).text().indexOf('€') !== -1) {
+				} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize2 + 1).text().indexOf('€') !== -1) {
 					currency3 = 'EUR';
-				} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn2 + 1).text().indexOf('£') !== -1) {
+				} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize2 + 1).text().indexOf('£') !== -1) {
 					currency3 = 'GBP';
-				} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn2 + 1).text().indexOf('₩') !== -1) {
+				} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize2 + 1).text().indexOf('₩') !== -1) {
 					currency3 = 'KRW';
-				} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn2 + 1).text().indexOf('AU$') !== -1) {
+				} else if ($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize2 + 1).text().indexOf('AU$') !== -1) {
 					currency3 = 'AUD';
-				} else if (esrever.reverse($tables[0].find('tr:nth-child(2)').find('th, td').eq(prizeColumn2 + 1).text()).match(/\$(?!UA)/) !== null) {
+				} else if (esrever.reverse($tables[0].find('tr:nth-child(2)').find('th, td').eq(columns.prize2 + 1).text()).match(/\$(?!UA)/) !== null) {
 					currency3 = 'USD';
 				}
 			}
 		}
 
 		if (currency3) {
-			prizeColumn3 = prizeColumn2 + 1;
+			columns.prize3 = columns.prize2 + 1;
 		}
 	}
-	var lastPrizeColumn = prizeColumn3 > 0 ? prizeColumn3 : (prizeColumn2 > 0 ? prizeColumn2 : prizeColumn1);
+	var lastPrizeColumn = columns.prize3 > 0 ? columns.prize3 : (columns.prize2 > 0 ? columns.prize2 : columns.prize1);
 	var searchForPointsText = $tables[0].find('tr:first').find('th, td').eq(lastPrizeColumn + 1).text().trim();
 	if (special == 'tsl4') {
 		pointsType = 'tsl4';
+	} else if (special == 'challenger' || special == 'codea') {
+		pointsType = 'wcs201X';
 	} else if (special == 'paidTrip' || special == 'seed') {
 		pointsType = 'seed';
 	}
-	if (searchForPointsText.toLowerCase().indexOf('points') !== -1
-		|| searchForPointsText == 'Percent'
-		|| searchForPointsText == 'Seed') {
-		if (searchForPointsText == 'Percent') {
-			pointsType = 'pcnt';
-		} else if (searchForPointsText == 'Seed') {
-			pointsType = 'seed';
-		} else if (searchForPointsText.indexOf('OSC') !== -1) {
-			pointsType = 'osc';
-		} else {
-			pointsType = 'points';
+	if (searchForPointsText.toLowerCase().indexOf('points') !== -1 ||
+		searchForPointsText == 'Percent' ||
+		searchForPointsText == 'Seed') {
+		if (!pointsType) {
+			if (searchForPointsText == 'Percent') {
+				pointsType = 'pcnt';
+			} else if (searchForPointsText == 'Seed') {
+				pointsType = 'seed';
+			} else if (searchForPointsText.indexOf('OSC') !== -1) {
+				pointsType = 'osc';
+			} else {
+				pointsType = 'points';
+			}
 		}
-		pointsColumn = lastPrizeColumn + 1;
+		columns.points = lastPrizeColumn + 1;
 		if (type == 'individual' || type == 'singles') {
-			playerColumn = lastPrizeColumn + 2;
-			teamColumn = lastPrizeColumn + 3;
+			columns.player = lastPrizeColumn + 2;
+			columns.team = lastPrizeColumn + 3;
 		} else if (type == 'team') {
-			teamColumn = lastPrizeColumn + 2;
+			columns.team = lastPrizeColumn + 2;
 		} else if (type == 'doubles') {
-			player1Column = lastPrizeColumn + 2;
-			player2Column = lastPrizeColumn + 3;
+			columns.player1 = lastPrizeColumn + 2;
+			columns.player2 = lastPrizeColumn + 3;
 		}
-		if (!currency2 && $tables[0].find('tr:first').find('th, td').eq(lastPrizeColumn + 2).text().trim() == 'Seed') {
+		if (!currency2 && pointsType != 'seed' && 
+			$tables[0].find('tr:first').find('th, td').eq(lastPrizeColumn + 2).text().trim() == 'Seed') {
 			currency2 = 'seed';
-			prizeColumn2 = lastPrizeColumn + 2;
+			columns.prize2 = lastPrizeColumn + 2;
 			if (type == 'individual' || type == 'singles') {
-				playerColumn++;
-				teamColumn++;
+				columns.player++;
+				columns.team++;
 			} else if (type == 'team') {
-				teamColumn++;
+				columns.team++;
 			} else if (type == 'doubles') {
-				player1Column++;
-				player2Column++;
+				columns.player1++;
+				columns.player2++;
 			}
 		}
 	} else {
 		if (type == 'individual' || type == 'singles') {
-			playerColumn = lastPrizeColumn + 1;
-			teamColumn = lastPrizeColumn + 2;
+			columns.player = lastPrizeColumn + 1;
+			columns.team = lastPrizeColumn + 2;
 		} else if (type == 'team') {
-			teamColumn = lastPrizeColumn + 1;
+			columns.team = lastPrizeColumn + 1;
 		} else if (type == 'doubles') {
-			player1Column = lastPrizeColumn + 1;
-			player2Column = lastPrizeColumn + 2;
+			columns.player1 = lastPrizeColumn + 1;
+			columns.player2 = lastPrizeColumn + 2;
 		}
 	}
-	console.log('Columns', {
-		'prizeColumn1': prizeColumn1,
-		'prizeColumn2': prizeColumn2,
-		'prizeColumn3': prizeColumn3,
-		'pointsColumn': pointsColumn,
-		'playerColumn': playerColumn,
-		'teamColumn': teamColumn,
-		'player1Column': player1Column,
-		'player2Column': player2Column
-	}, 'Currencies', {
+	console.log('Columns', columns,
+		'Currencies', {
 		'currency1': currency1,
 		'currency2': currency2,
 		'currency3': currency3
@@ -426,6 +432,29 @@ var tableOffset = parseInt(options.tableOffset),
 			$.each($tables[j].find('tr'), function(trIndex) {
 				var pl, prizes, points = '';
 
+				var localColumns = $.extend({}, columns),
+					localColumnOffsets = $.extend({}, columns),
+					column = 0;
+				$.each(localColumnOffsets, function(key, value) {
+					localColumnOffsets[key] = 0;
+				});
+				$(this).find('td').each(function() {
+					if ($(this).attr('colspan') !== undefined &&
+						parseInt($(this).attr('colspan')) > 1) {
+						$.each(columns, function(key, value) {
+							if (value > column) {
+								localColumnOffsets[key] += parseInt($(this).attr('colspan')) - 1;
+							}
+						});
+						column += parseInt($(this).attr('colspan'));
+					} else {
+						++column;
+					}
+				});
+				$.each(localColumnOffsets, function(key, value) {
+					localColumns[key] = columns[key] - value;
+				});
+
 				if (mem > 0) {
 					pl = memPl;
 					prizes = memPrizes;
@@ -433,9 +462,9 @@ var tableOffset = parseInt(options.tableOffset),
 					mem--;
 					rowspanOffsetEnable = true;
 				} else {
-					pl = $(this).find('td').eq(placeColumn).text().trim().replace(/(th|st|nd|rd)\b/g, '').replace(/\//g, '-');
+					pl = $(this).find('td').eq(localColumns.place).text().trim().replace(/(th|st|nd|rd)\b/g, '').replace(/\//g, '-');
 					if (pl === '') {
-						var medalSpan = $(this).find('td').eq(placeColumn).find('span').first();
+						var medalSpan = $(this).find('td').eq(localColumns.place).find('span').first();
 						if (medalSpan.length == 1) {
 							switch (medalSpan.attr('title')) {
 								case 'First Place': pl = 1; break;
@@ -453,21 +482,32 @@ var tableOffset = parseInt(options.tableOffset),
 						else if (pl == '5-8') { prizes.push(0); points = 41; }
 						else if (pl == '9-16') { prizes.push(0); points = 21; }
 						else if (pl == '17-32') { prizes.push(0); points = 11; }
+					} else if (special == 'challenger' && pl.substr(0, 2) == '1-') {
+						prizes.push('premier');
+						localColumns.points = null;
+						--localColumns.player;
+						--localColumns.team;
+					} else if (special == 'codea' &&
+						(pl.substr(0, 2) == '1-' || pl.substr(0, 3) == '13-' || pl == 25)) {
+						prizes.push('code s');
+						localColumns.points = null;
+						localColumns.player -= 2;
+						localColumns.team -= 2;
 					} else {
 						if (special == 'paidTrip') {
-							points = ($(this).find('td').eq(prizeColumn1).text().trim().toLowerCase().indexOf('paid trip') !== -1 ? 'Paid Trip' : 0);
+							points = ($(this).find('td').eq(localColumns.prize1).text().trim().toLowerCase().indexOf('paid trip') !== -1 ? 'Paid Trip' : 0);
 						} else if (special == 'seed') {
-							points = ($(this).find('td').eq(prizeColumn1).text().trim().toLowerCase().indexOf('seed') !== -1 ? 'Seed' : 0);
+							points = ($(this).find('td').eq(localColumns.prize1).text().trim().toLowerCase().indexOf('seed') !== -1 ? 'Seed' : 0);
 						}
-						prizes.push($(this).find('td').eq(prizeColumn1).text().trim().replace(/[A-Za-z]+\.\s/g, '').replace(/\s\+\s.+/g, '').replace(/[^0-9\.]/g, ''));
-						if (prizeColumn2) {
-							prizes.push($(this).find('td').eq(prizeColumn2).text().trim().replace(/[A-Za-z]+\.\s/g, '').replace(/\s\+\s.+/g, '').replace(/[^0-9\.]/g, ''));
+						prizes.push($(this).find('td').eq(localColumns.prize1).text().trim().replace(/[A-Za-z]+\.\s/g, '').replace(/\s\+\s.+/g, '').replace(/[^0-9\.]/g, ''));
+						if (localColumns.prize2) {
+							prizes.push($(this).find('td').eq(localColumns.prize2).text().trim().replace(/[A-Za-z]+\.\s/g, '').replace(/\s\+\s.+/g, '').replace(/[^0-9\.]/g, ''));
 						}
-						if (pointsColumn){
+						if (localColumns.points !== null) {
 							if (pointsType == 'seed') {
-								points = $(this).find('td').eq(pointsColumn).text().trim();
+								points = $(this).find('td').eq(localColumns.points).text().trim();
 							} else {
-								points = $(this).find('td').eq(pointsColumn).text().trim().replace(/[^0-9\.%]/g, '');
+								points = $(this).find('td').eq(localColumns.points).text().trim().replace(/[^0-9\.%]/g, '');
 							}
 						}
 					}
@@ -491,7 +531,7 @@ var tableOffset = parseInt(options.tableOffset),
 				}
 
 				// The following is only for player rows
-				if ($(this).find('.collapseButton').length > 0 || (j == 0 && trIndex == 0)) {
+				if ($(this).find('.collapseButton').length > 0 || (j === 0 && trIndex === 0)) {
 					return true;
 				}
 
@@ -501,7 +541,7 @@ var tableOffset = parseInt(options.tableOffset),
 					parsePlayerInput = {
 						game: game,
 						$this: $(this),
-						playerColumn: playerColumn,
+						playerColumn: localColumns.player,
 						rowspanOffsetEnable: rowspanOffsetEnable,
 						rowspanOffset: rowspanOffset
 					};
@@ -509,7 +549,7 @@ var tableOffset = parseInt(options.tableOffset),
 				}
 
 				if (type == 'individual' || type == 'singles' || type == 'team') {
-					var $teamCell = $(this).find('td').eq(teamColumn - (rowspanOffsetEnable ? rowspanOffset : 0));
+					var $teamCell = $(this).find('td').eq(localColumns.team - (rowspanOffsetEnable ? rowspanOffset : 0));
 					$teamCell.find('span:not(.team-template-image):not(.team-template-text):not(.team-template-team-short):not(.team-template-team-standard):hidden').text('');
 					team = $teamCell.text().trim().toLowerCase();
 					if (team === 'zzzzz') {
@@ -560,18 +600,19 @@ var tableOffset = parseInt(options.tableOffset),
 						.replace(/^teamnyancat$/, 'nyan')
 						.replace(/^artyk gaming$/, 'artyk')
 						.replace(/^8th team$/, 'team 8')
-						.replace(/^mortal teamwork$/, 'mtw');
+						.replace(/^mortal teamwork$/, 'mtw')
+						.replace(/^extreme supremacy$/, 'team extreme supremacy');
 				} else if (type == 'doubles') {
 					parsePlayerInput = {
 						game: game,
 						$this: $(this),
-						playerColumn: player1Column,
+						playerColumn: localColumns.player1,
 						rowspanOffsetEnable: rowspanOffsetEnable,
 						rowspanOffset: rowspanOffset
 					};
 					player1 = parsePlayer(parsePlayerInput, global);
 					
-					parsePlayerInput.playerColumn = player2Column;
+					parsePlayerInput.playerColumn = localColumns.player2;
 					player2 = parsePlayer(parsePlayerInput, global);
 				}
 
@@ -609,7 +650,6 @@ var tableOffset = parseInt(options.tableOffset),
 					tableData['4_'] = [];
 					tableData['5-8_'] = [];
 					tableData['4_'].push(tableData['4-8_'].shift());
-					var limit = tableData['4-8_'].length;
 					while(tableData['4-8_'].length > 0) {
 						tableData['5-8_'].push(tableData['4-8_'].shift());
 					}
@@ -621,7 +661,7 @@ var tableOffset = parseInt(options.tableOffset),
 		console.log(tableData);
 
 		// Prize pool start
-		var wikitext = '{{' + templateTitle('start', game, type);
+		var wikitext = '{{' + templateTitle('start', game, type, special);
 		if (localprizePlace >= 0) {
 			wikitext += '|localcurrency=' + localcurrency.toLowerCase();
 		}
@@ -640,26 +680,34 @@ var tableOffset = parseInt(options.tableOffset),
 		var usdprizeTotal = 0,
 			localprizeTotal = 0;
 		var slots = [];
-		for (var slot in tableData) {
-			slots.push(slot);
+		for (var tableSlot in tableData) {
+			slots.push(tableSlot);
 		}
 		slots.sort(compareByPlaceAscThenPointsDesc);
 		console.log('slots', slots);
 		for (var s = 0; s < slots.length; s++) {
 			var slot = slots[s];
-			var rowWikitext = '{{' + templateTitle('slot', game, type);
+			var rowWikitext = '{{' + templateTitle('slot', game, type, special);
 			rowWikitext += '|place=' + tableData[slot][0].place;
 			rowWikitext += '|usdprize=';
 			if ('usdprize' in tableData[slot][0]) {
-				rowWikitext += (tableData[slot][0].usdprize == 0 ? 0 : numberWithCommas(tableData[slot][0].usdprize));
-				if (tableData[slot][0].usdprize) {
-					usdprizeTotal += tableData[slot].length * parseFloat(tableData[slot][0].usdprize);
+				if (!isNaN(parseFloat(tableData[slot][0].usdprize))) {
+					rowWikitext += (tableData[slot][0].usdprize === 0 ? '0' : numberWithCommas(tableData[slot][0].usdprize));
+					if (tableData[slot][0].usdprize) {
+						usdprizeTotal += tableData[slot].length * parseFloat(tableData[slot][0].usdprize);
+					}
+				} else {
+					rowWikitext += tableData[slot][0].usdprize === '' ? '0' : tableData[slot][0].usdprize;
 				}
 			}
 			if ('localprize' in tableData[slot][0]) {
-				rowWikitext += '|localprize=' + (tableData[slot][0].localprize == 0 ? 0 : numberWithCommas(tableData[slot][0].localprize));
-				if (tableData[slot][0].localprize) {
-					localprizeTotal += tableData[slot].length * parseFloat(tableData[slot][0].localprize);
+				if (!isNaN(parseFloat(tableData[slot][0].localprize))) {
+					rowWikitext += '|localprize=' + (tableData[slot][0].localprize === 0 ? 0 : numberWithCommas(tableData[slot][0].localprize));
+					if (tableData[slot][0].localprize) {
+						localprizeTotal += tableData[slot].length * parseFloat(tableData[slot][0].localprize);
+					}
+				} else {
+					rowWikitext += tableData[slot][0].localprize === '' ? '0' : tableData[slot][0].localprize;
 				}
 			}
 			if ('points' in tableData[slot][0]) {
@@ -686,7 +734,7 @@ var tableOffset = parseInt(options.tableOffset),
 			wikitext += rowWikitext;
 		}
 		// Prize pool end
-		wikitext += '{{' + templateTitle('end', game, type) + '}}';
+		wikitext += '{{' + templateTitle('end', game, type, special) + '}}';
 
 		if (localToUsdRate) {
 			var localAmount = 1,
@@ -700,9 +748,9 @@ var tableOffset = parseInt(options.tableOffset),
 			} else {
 				usdAmount = localToUsdRate.toFixed(5);
 			}
-			wikitext += '\n\'\'Converted USD prizes are based on the currency exchange rate (taken from [http://xe.com xe.com]) on '
-				+ localToUsdRateDate.toWikiDate() + ': '
-				+ numberWithCommas(localAmount) + ' ' + localcurrency.toUpperCase() + ' = ' + usdAmount + ' USD.\'\'';
+			wikitext += '\n\'\'Converted USD prizes are based on the currency exchange rate (taken from [http://xe.com xe.com]) on ' +
+				localToUsdRateDate.toWikiDate() + ': ' +
+				numberWithCommas(localAmount) + ' ' + localcurrency.toUpperCase() + ' = ' + usdAmount + ' USD.\'\'';
 		}
 		if (showTotalPrize) {
 			//wikitext += '\n\nTotal prize pool:';
