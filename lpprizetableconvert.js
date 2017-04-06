@@ -452,7 +452,8 @@ var tableOffset = parseInt(options.tableOffset),
 					}
 				});
 				$.each(localColumnOffsets, function(key, value) {
-					localColumns[key] = columns[key] - value;
+					if (columns[key] !== null)
+						localColumns[key] = columns[key] - value;
 				});
 
 				if (mem > 0) {
